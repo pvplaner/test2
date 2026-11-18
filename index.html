@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><style>:root{color-scheme:light}html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Aufmaß-Protokoll</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#1B3A57">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: sticky Kopfzeile mit Protokoll-Auswahl und Fortschritt, darunter Abschnitte als aufklappbare Karten, am Ende Mehrkosten, Unterschrift, Export */
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#14202B; --muted:#5B6B79; --line:#D5DCE4;
+  --brand:#1B3A57; --on-brand:#FFFFFF; --accent:#F2B100; --on-accent:#2A2000;
+  --warn-bg:#FDECEA; --warn:#B3261E; --ok:#1E7B4B; --field:#F5F7FA;
+  --f-head:'Space Grotesk',system-ui,sans-serif; --f-body:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E151C; --surface:#17212B; --ink:#E7ECF1; --muted:#97A6B4; --line:#2B3A48;
+  --brand:#2D5A87; --on-brand:#FFFFFF; --accent:#F2B100; --on-accent:#2A2000;
+  --warn-bg:#3A1C1A; --warn:#FF9C94; --ok:#6FD39B; --field:#101922; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --surface:#17212B; --ink:#E7ECF1; --muted:#97A6B4; --line:#2B3A48;
+  --brand:#2D5A87; --on-brand:#FFFFFF; --accent:#F2B100; --on-accent:#2A2000;
+  --warn-bg:#3A1C1A; --warn:#FF9C94; --ok:#6FD39B; --field:#101922; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);
+  padding-block:0 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--brand);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--brand);color:var(--on-brand);
+  margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px))) calc(-1*max(16px,env(safe-area-inset-right,0px)));
+  padding:12px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.hrow{display:flex;align-items:center;gap:10px;justify-content:space-between}
+h1{font:700 19px/1.2 var(--f-head);margin:0}
+.sub{font-size:12px;opacity:.8}
+.pct{font:700 15px var(--f-head);font-variant-numeric:tabular-nums;background:var(--accent);color:var(--on-accent);padding:3px 10px;border-radius:99px}
+.bar{height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.tabs{display:flex;gap:6px;margin-top:10px}
+.tabs button{flex:1;min-width:0;min-height:40px;padding:0 4px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:transparent;color:var(--on-brand);font:600 13px var(--f-body);cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+main{display:flex;flex-direction:column;gap:12px;padding-top:14px;max-width:720px;margin:0 auto}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{list-style:none;cursor:pointer;padding:14px;display:flex;align-items:center;gap:10px;font:700 16px var(--f-head);min-height:52px}
+summary::-webkit-details-marker{display:none}
+summary .cnt{margin-left:auto;font:500 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
+summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:4px;transition:transform .15s}
+details[open] summary::after{transform:rotate(-135deg)}
+summary:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.body{padding:2px 14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+.field{grid-column:span 2;min-width:0;display:flex;flex-direction:column;gap:5px}
+.field.half{grid-column:span 1}
+label,.lbl{font-size:13px;font-weight:500;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted)}
+input[type=text],input[type=number],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:11px 12px;min-height:46px}
+textarea{min-height:84px;resize:vertical}
+.unit{position:relative}.unit input{padding-right:44px}.unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--field)}
+.seg button{flex:1;min-height:46px;border:0;background:transparent;color:var(--ink);font:500 15px var(--f-body);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--brand);color:var(--on-brand)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:42px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:500 14px var(--f-body);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:500}
+.chk{grid-column:span 2;display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.chk:last-child{border-bottom:0}
+.chkrow{display:flex;align-items:flex-start;gap:10px}
+.chkrow input{width:22px;height:22px;margin-top:1px;accent-color:var(--brand);flex:none}
+.chkrow label{color:var(--ink);font-size:14px;font-weight:400}
+.photo{margin-left:32px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 14px var(--f-body);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.btn.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.btn.danger{color:var(--warn)}
+.photo .btn{min-height:38px;font-size:13px}
+.photo img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.costs{grid-column:span 2;display:flex;flex-direction:column;gap:6px}
+.cost{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
+.cost b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.total{display:flex;justify-content:space-between;font:700 17px var(--f-head);padding-top:6px;font-variant-numeric:tabular-nums}
+canvas{width:100%;height:150px;background:var(--field);border:1px dashed var(--muted);border-radius:8px;touch-action:none;display:block}
+.actions{grid-column:span 2;display:flex;flex-wrap:wrap;gap:10px}
+.actions .btn{flex:1 1 140px}
+.legal{font-size:12px;color:var(--muted);grid-column:span 2}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <div class="hrow">
+    <div><h1>Aufmaß-Protokoll</h1><div class="sub" id="sub">SonnenInvest GmbH</div></div>
+    <div class="pct" id="pct">0 %</div>
+  </div>
+  <div class="tabs" id="tabs" role="group" aria-label="Protokoll wählen">
+    <button type="button" data-t="pv" aria-pressed="true">Photovoltaik</button>
+    <button type="button" data-t="wp" aria-pressed="false">Wärmepumpe</button>
+    <button type="button" data-t="kl" aria-pressed="false">Klimaanlage</button>
+  </div>
+  <div class="bar"><i id="barfill"></i></div>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+var TYPE_KEY='aufmass-type';
+
+/* ===== Protokoll 1: Photovoltaik ===== */
+var PV={id:'pv',name:'Photovoltaik',pdfTitle:'Aufmaß-Protokoll Photovoltaik',head:'AUFMASS-PROTOKOLL PHOTOVOLTAIK',file:'Aufmassprotokoll',key:'aufmass-protokoll-blank-v1',
+legal:'Vorbehalt: Nicht dokumentierte Bestands- und Baustellenangaben müssen beim Aufmaß ergänzt werden. Mehrkosten werden bei Planung und Montage kommuniziert und in der Schlussrechnung berücksichtigt. Erd- und Schlitzarbeiten im Haus übernimmt der Auftraggeber. Asbesthaltige Bauteile verhindern die gesamte Realisierbarkeit.',
+S:[
+{id:'kunde',t:'Kunde und Standort',f:[
+ {k:'kunde',l:'Kunde Vorname Nachname'},
+ {k:'str',l:'Straße, Hausnummer'},
+ {k:'plz',l:'PLZ',w:1},{k:'ort',l:'Wohnort',w:1},
+ {k:'astr',l:'Anlagenstandort, falls abweichend: Straße, Hausnummer'},
+ {k:'aplz',l:'PLZ',w:1},{k:'aort',l:'Ort',w:1}
+]},
+{id:'dach',t:'Dach',f:[
+ {k:'deck',l:'Dacheindeckung, Art und genauer Ziegel-Typ'},
+ {k:'neig',l:'Dachneigung',t:'n',u:'°',w:1},{k:'flach',l:'Flachdach?',t:'yn',w:1},
+ {k:'str_n',l:'Anzahl Strings',t:'n',w:1},
+ {k:'klam',l:'Ziegel geklammert (Mehraufwand)',t:'yn',w:1},
+ {k:'aufs',l:'Aufsparrendämmung, Stärke',t:'n',u:'cm',w:1},
+ {k:'spar',l:'Sparrenabstand (Achse)',t:'n',u:'cm',w:1},
+ {k:'halt',l:'Aufdach-Modulhalter verwenden?',t:'yn',w:1},
+ {k:'fass',l:'Fassaden-Montage',t:'yn',w:1},
+ {k:'fassm',l:'Fassade: Material und Stärke'},
+ {k:'hind',l:'Hindernisse am Dach',t:'area',h:'Kamin, SAT-Schüssel, Dachfenster, Antennen, Blitzableiter, dünne Sparren usw. Fotos machen!'},
+ {k:'dcn',l:'Weitere Notizen zu DC-Montage, Dach und Fassade',t:'area',h:'Ggf. Aufbau und Stärke der Fassade.'}
+]},
+{id:'bestand',t:'Bestand und Rückbau',f:[
+ {k:'solar',l:'Solarthermie vorhanden',t:'yn',w:1},{k:'bestpv',l:'Bestandsanlage vorhanden',t:'yn',w:1},
+ {k:'freil',l:'Freileitung vorhanden (Foto)',t:'yn',w:1},
+ {k:'rbs',l:'Rückbau Solarthermie',t:'yn',w:1,warn:{on:'ja',text:'Vor Demontage bauseits entleert, abgekoppelt, verschlossen. Entsorgung mit Kunde klären. 500 € pauschal pro Modul inkl. Entsorgung.'}},
+ {k:'rbs_n',l:'Anzahl Solarthermie-Module',t:'n',w:1},
+ {k:'rbb',l:'Rückbau Bestandsanlage',t:'yn',w:1},
+ {k:'blitz',l:'Blitzschutz (Rückbau oder Einbindung)',t:'yn',warn:{on:'ja',text:'Aufpreis 550 €. Genauere Auseinandersetzung nötig. Fotos machen!'}},
+ {k:'sat',l:'SAT-Schüssel versetzen',t:'yn',warn:{on:'ja',text:'Machbarkeit genau prüfen. SAT-Kabel und Verlängerungen immer bauseits. Pauschal 500 €. Keine Haftung für Feuchtigkeitsschäden bei dachdurchdringenden Ständern.'}},
+ {k:'luef',l:'Lüftungskamine im Modulbereich, Anzahl',t:'n',w:1,warn:{on:'pos',text:'Werden demontiert und durch Flachlüfter ersetzt: 150 € pro Stück.'}},
+ {k:'bkw',l:'Bestandsanlage: Leistung und Typ Module, Gesamtleistung kWp, Typ und Leistung Wechselrichter',t:'area'}
+]},
+{id:'haus',t:'Haus und Logistik',f:[
+ {k:'hhind',l:'Hindernisse am Haus',t:'area',h:'Bäume, Büsche, Balkon, Pergola, Wintergarten, Böschungen, Kellertreppe, Gewässer usw. Fotos machen!'},
+ {k:'trauf',l:'Traufhöhe, Boden bis untere Dachkante',t:'n',u:'m',w:1,warn:{on:'ge8',text:'Ab 8 m externer Gerüstbauer, Mehrkosten. Kosten vor Auftragsbestätigung kommunizieren.'}},
+ {k:'platz',l:'Genug Platz für Leiter und Gerüst',t:'yn',w:1},
+ {k:'abst',l:'Ort für Abstellmöglichkeit bei Materiallieferung und Montage'},
+ {k:'anl',l:'Ort für Anlieferung und Lagerung des Materials'},
+ {k:'lkw',l:'Zufahrt für LKW geeignet?',t:'yn',w:1},{k:'dist',l:'Distanz zum Haus',t:'n',u:'m',w:1},
+ {k:'aufb',l:'Dachaufbau unbekannt oder nicht einsehbar?',t:'yn',warn:{on:'ja',text:'Der Auftraggeber trägt Mehrkosten bei der Montage bis maximal 1.200 €.'}}
+]},
+{id:'kabel',t:'Kabelführung und Technik',f:[
+ {k:'wr',l:'Standort Wechselrichter und Speicher',h:'Fotos machen, Standort von Wechselrichter und Speicher einzeichnen.'},
+ {k:'dc',l:'DC-Kabelführung: wo sollen die Kabel von der PV zum Wechselrichter geführt werden?',t:'area',h:'Fotos machen und Kabelführung einzeichnen!'},
+ {k:'ac',l:'AC-Kabelführung: Wechselrichter oder Speicher zum Zählerschrank',t:'area',h:'Fotos machen!'},
+ {k:'aclen',l:'Kabellänge AC (geschätzt)',t:'n',u:'m',w:1},
+ {k:'altpv',l:'Bestehende PV-Anlage in den Eigenverbrauch einbinden?',t:'yn',w:1},
+ {k:'altwr',l:'Was geschieht mit den Bestands-Wechselrichtern und der Technik?',t:'area'}
+]},
+{id:'zs',t:'Zählerschrank',f:[
+ {k:'zsput',l:'Bestand Zählerschrank',t:'sel',o:['Aufputz','Unterputz'],w:1},
+ {k:'zsers',l:'Alten Schrank komplett ersetzen?',t:'yn',w:1},
+ {k:'zsn',l:'Anzahl Zähler in PV einbinden',t:'n',w:1},{k:'zsneu',l:'Neuen Zählerschrank verbauen',t:'yn',w:1},
+ {k:'mieter',l:'Mieterstrom',t:'yn',w:1},{k:'kask',l:'Kaskade verbauen',t:'yn',w:1},
+ {k:'wp',l:'Wärmepumpe: extra Zähler verbinden',t:'yn',w:1},
+ {k:'vollm',l:'Alle Zähler in der beiliegenden Vollmacht eingetragen?',t:'yn',w:1},
+ {k:'zshint',l:'Hinweise Zählerschrank',t:'area',h:'Unter Vorbehalt nachträglicher Prüfung durch die Projektleitung. Mögliche Kosten werden in der Auftragsbestätigung übernommen.'}
+]},
+{id:'erde',t:'Erdung und Wallbox',f:[
+ {k:'pa',l:'PA-Schiene und Erdspieß vorhanden (Foto)',t:'yn',warn:{on:'nein',text:'Nicht vorhanden: Mehrkosten 1.000 €.'}},
+ {k:'pahint',l:'Hinweise zur Erdung'},
+ {k:'wb',l:'Wallbox',t:'sel',o:['Keine','AC-Wallbox','Sigenergy DC-Charger']},
+ {k:'wblen',l:'Kabellänge Wallbox zu Zählerschrank',t:'n',u:'m',w:1},
+ {k:'dcw',l:'Sigenergy DC-Charger: Speicher in der Nähe des Ladepunkts?',h:'Speicher muss nah am Ladepunkt stehen, z. B. Garage. Kabel vom Speichermodul zum Ladestecker nur 7,5 m.'},
+ {k:'notiz',l:'Sonstige Notizen und Hinweise',t:'area'}
+]}
+],
+CHK:[
+['Fotos von allen zu belegenden Dachseiten, am besten Drohnenfotos'],
+['Fotos von Kabelwegen der Strings bis zum Wechselrichter, mit eingezeichneten Linien'],
+['Fotos von Ein- und Ausgang der DC-Kabel (Wanddurchführung, Schacht)'],
+['Fotos von Hindernissen am Dach und von allem, was rückgebaut oder versetzt wird'],
+['Fotos von Außenanlagen, Gerüststandort, Zugang für Module und Monteure'],
+['Fotos von Stellplatz für Materialanlieferung und Lagerung'],
+['Fotos vom Standort Wechselrichter und Speicher'],
+['Foto vom Zählerschrank im Ganzen, gerade, nichts abgeschnitten'],
+['Fotos von allen Stromzählern einzeln, Zählernummer lesbar'],
+['Info oder Foto: Zählerschrank aufputz oder unterputz'],
+['Fotos vom Platz eines neuen Zählerschranks, falls nötig'],
+['Fotos der Kabelwege vom Wechselrichter oder Speicher zum Zählerschrank, Linien eingezeichnet'],
+['Fotos von Potentialschiene und Erdspieß'],
+['Fotos vom Hausanschlusskasten mit zu- und abgehenden Leitungen'],
+['Fotos von weiteren Standorten: Wallbox, Unterverteilung, Besonderheiten']
+],
+DOCS:['Angebot unterschrieben','Widerrufsbelehrung unterschrieben','Vollmacht vollständig ausgefüllt und unterschrieben','Katasterplan oder Lageplan mit lesbaren Flurstücksnummern','Aufmaß-Protokoll vollständig ausgefüllt und unterschrieben','Fertige Dachplanung im System'],
+costs:function(){
+ var c=[];
+ if(val('sat')==='ja')c.push(['SAT-Schüssel versetzen (pauschal)',500]);
+ var l=+val('luef');if(l>0)c.push(['Lüftungskamine ersetzen, '+l+' × 150 €',l*150]);
+ if(val('blitz')==='ja')c.push(['Blitzschutz Rückbau oder Einbindung',550]);
+ if(val('rbs')==='ja'){var n=+val('rbs_n')||1;c.push(['Rückbau Solarthermie, '+n+' × 500 €',n*500])}
+ if(val('pa')==='nein')c.push(['PA-Schiene und Erdspieß fehlen',1000]);
+ if(val('aufb')==='ja')c.push(['Unbekannter Dachaufbau (maximal)',1200]);
+ return c;
+}};
+
+/* ===== Protokoll 2: Wärmepumpe ===== */
+var JNU=['Ja','Nein','Unbekannt'];
+var WP={id:'wp',name:'Wärmepumpe',pdfTitle:'Aufmaß-Protokoll Wärmepumpe',head:'AUFMASS-PROTOKOLL WÄRMEPUMPE',file:'Aufmassprotokoll_Waermepumpe',key:'aufmass-wp-v1',
+legal:'Dieses Aufmaß dient der Bestandsaufnahme und Montagevorbereitung. Nicht einsehbare oder nicht dokumentierte Gegebenheiten sind als offene Punkte zu kennzeichnen. Technische Auslegung, Schall- und Aufstellbedingungen, elektrischer Anschluss, hydraulische Einbindung sowie erforderliche Genehmigungen und Abstimmungen sind vor Umsetzung durch die jeweils zuständigen Fachstellen zu prüfen. Abweichungen, Zusatzarbeiten und mögliche Mehrkosten sind vor Ausführung mit Auftraggeber und Projektleitung abzustimmen.',
+S:[
+{id:'w1',t:'1. Kunden- und Objektangaben',f:[
+ {k:'kunde',l:'Kunde Vorname Nachname'},
+ {k:'str',l:'Straße, Hausnummer'},
+ {k:'plz',l:'PLZ',w:1},{k:'ort',l:'Wohnort',w:1},
+ {k:'tel',l:'Telefon / E-Mail'},
+ {k:'ansp',l:'Ansprechpartner vor Ort'},
+ {k:'astr',l:'Anlagenstandort, falls abweichend: Straße, Hausnummer'},
+ {k:'aplz',l:'PLZ',w:1},{k:'aort',l:'Ort',w:1},
+ {k:'durch',l:'Aufmaß durch',w:1},{k:'termin',l:'Datum / Uhrzeit',w:1}
+]},
+{id:'w2',t:'2. Gebäude und Wärmebedarf',f:[
+ {k:'gebart',l:'Gebäudeart',t:'pick',o:['Einfamilienhaus','Mehrfamilienhaus','Sonstiges']},
+ {k:'gebson',l:'Gebäudeart, falls Sonstiges'},
+ {k:'baujahr',l:'Baujahr',t:'n',w:1},{k:'sanierung',l:'Sanierungsstand',w:1},
+ {k:'wfl',l:'Beheizte Wohnfläche',t:'n',u:'m²',w:1},
+ {k:'we',l:'Anzahl Wohneinheiten',t:'n',w:1},{k:'bew',l:'Anzahl Bewohner',t:'n',w:1},
+ {k:'ea',l:'Energieausweis / berechnete Heizlast vorhanden?',t:'yn',h:'Dokument oder Fotos machen.'},
+ {k:'heizlast',l:'Heizlast',t:'n',u:'kW',w:1},{k:'hlbasis',l:'Berechnungsgrundlage',w:1},
+ {k:'verbr',l:'Bisheriger Jahresverbrauch',t:'n',w:1},{k:'verbe',l:'Einheit',t:'pick',o:['kWh','Liter','m³'],w:1},
+ {k:'traeger',l:'Energieträger',t:'multi',o:['Gas','Öl','Strom','Holz/Pellets','Sonstiges']},
+ {k:'hkosten',l:'Bisherige Heizkosten (optional)',t:'n',u:'€/Jahr'},
+ {k:'nutz',l:'Besondere Nutzungsbedingungen',t:'multi',o:['Hoher Warmwasserbedarf','Gewerbe','Weitere']},
+ {k:'nutzw',l:'Weitere Nutzungsbedingungen'}
+]},
+{id:'w3',t:'3. Bestehende Heizungsanlage',f:[
+ {k:'wez',l:'Wärmeerzeuger / Hersteller / Typ'},
+ {k:'wbj',l:'Baujahr / Leistung'},
+ {k:'wort',l:'Aufstellort / Raum'},
+ {k:'wzust',l:'Zustand / bekannte Mängel'},
+ {k:'brenn',l:'Brennstoff / Anschluss'},
+ {k:'abgas',l:'Abgasführung / Schornstein'},
+ {k:'demo',l:'Soll die Altanlage demontiert werden?',t:'pick',o:['Ja','Nein','Teilweise']},
+ {k:'entsorg',l:'Entsorgung / Zuständigkeit geklärt?',t:'yn'},
+ {k:'entsh',l:'Hinweise zur Entsorgung'},
+ {k:'weitere',l:'Weitere Wärmeerzeuger (Kamin, Solarthermie etc.)'},
+ {k:'einb',l:'Einbindung / Weiterbetrieb'}
+]},
+{id:'w4',t:'4. Wärmeverteilung und Heizflächen',f:[
+ {k:'hsys',l:'Heizsystem',t:'pick',o:['Fußbodenheizung','Heizkörper','Mischsystem','Sonstiges']},
+ {k:'anteil',l:'Anteil / Bereiche'},
+ {k:'hk',l:'Heizkörper: Typ / Größe / Anzahl'},
+ {k:'fbh',l:'Fußbodenheizung: Kreise / Verteilerstandorte'},
+ {k:'vl',l:'Bisherige Vorlauftemperatur bei Auslegung',t:'n',u:'°C',w:1},{k:'rl',l:'Rücklauftemperatur (falls bekannt)',t:'n',u:'°C',w:1},
+ {k:'vlq',l:'Quelle der Temperaturangabe'},
+ {k:'hyd',l:'Hydraulischer Abgleich vorhanden?',t:'pick',o:JNU},
+ {k:'kreise',l:'Heizkreise / Pumpen / Mischer'},
+ {k:'rohr',l:'Rohrdimensionen / Material (soweit erkennbar)'},
+ {k:'rzust',l:'Zustand / Auffälligkeiten'},
+ {k:'platzh',l:'Platz für hydraulische Komponenten?',t:'yn',h:'Hinweise bei Bedarf unter Offene Punkte eintragen.'},
+ {k:'hfotos',l:'Fotos / Skizze vorhanden?',t:'yn'}
+]},
+{id:'w5',t:'5. Warmwasser und Speicher',f:[
+ {k:'wwb',l:'Warmwasserbereitung bisher',t:'pick',o:['Zentral','Dezentral','Kombispeicher']},
+ {k:'spv',l:'Speicher vorhanden (Typ / Volumen)'},
+ {k:'spl',l:'Speichervolumen',t:'n',u:'l',w:1},{k:'baeder',l:'Anzahl Bäder / Duschen',t:'n',w:1},
+ {k:'zirk',l:'Zirkulationsleitung vorhanden?',t:'pick',o:JNU},
+ {k:'wann',l:'Besondere Anforderungen (z. B. große Wanne)'},
+ {k:'gww',l:'Geplanter Warmwasserspeicher (Typ / Volumen)'},
+ {k:'gpuf',l:'Geplanter Pufferspeicher (Typ / Volumen)'},
+ {k:'tuer',l:'Türbreite',t:'n',u:'cm',w:1},{k:'treppen',l:'Treppen',w:1},
+ {k:'einbr',l:'Zugänglichkeit / Einbringmaße geprüft?',t:'yn'},
+ {k:'sich',l:'Ablauf / Sicherheitsgruppe / Ausdehnungsgefäß'}
+]},
+{id:'w6',t:'6. Geplanter Wärmepumpen-Aufstellort',f:[
+ {k:'wpart',l:'Wärmepumpenart / System',t:'pick',o:['Luft/Wasser','Sole/Wasser','Wasser/Wasser']},
+ {k:'wpmodell',l:'Hersteller / Modell / Leistung (laut Planung)'},
+ {k:'aufst',l:'Aufstellung',t:'multi',o:['Außen','Innen','Split','Monoblock']},
+ {k:'lage',l:'Standort / genaue Lage'},
+ {k:'fund',l:'Untergrund / Fundament / Konsole'},
+ {k:'tragf',l:'Abmessungen / Tragfähigkeit geprüft?',t:'yn'},
+ {k:'abstn',l:'Abstände zu Grundstücksgrenze / Nachbar / Fenstern'},
+ {k:'luft',l:'Luftstrom / Ausblasrichtung / Schall'},
+ {k:'zugang',l:'Zugänglichkeit für Montage / Service',t:'pick',o:['Gegeben','Eingeschränkt']},
+ {k:'zugh',l:'Hinweise zur Zugänglichkeit'},
+ {k:'schutz',l:'Schutz vor Schnee, Wasser, Dachlawinen etc.'},
+ {k:'kern',l:'Kernbohrung / Wanddurchführung erforderlich?',t:'yn'},
+ {k:'kernpos',l:'Position / Durchmesser / Wandaufbau'}
+]},
+{id:'w7',t:'7. Leitungsführung und hydraulischer Anschluss',f:[
+ {k:'lweg',l:'Leitungsweg Außengerät zum Gebäude: Verlauf / Durchführungsort',t:'area'},
+ {k:'llen',l:'Geschätzte Leitungslänge',t:'n',u:'m',w:1},{k:'dfz',l:'Anzahl Wand-/Deckendurchführungen',t:'n',w:1},
+ {k:'dftyp',l:'Art der Durchführung',t:'multi',o:['Kernbohrung','Vorhandene Öffnung']},
+ {k:'leer',l:'Leerrohre / Schutz / Dämmung'},
+ {k:'lheiz',l:'Leitungsweg zum Heizraum / Speicher'},
+ {k:'rdim',l:'Geschätzte Rohrdimension / Länge'},
+ {k:'kond',l:'Kondensat- / Abtauwasser',t:'multi',o:['Versickerung','Ablauf','Sonstiges']},
+ {k:'kondw',l:'Entwässerungsweg / Frostschutz'},
+ {k:'kondf',l:'Kondensatleitung frostsicher ausführbar?',t:'yn',warn:{on:'nein',text:'Klärungsbedarf: frostsichere Ausführung unter Offene Punkte eintragen.'}},
+ {k:'fuell',l:'Heizungswasser / Füll- und Spülmöglichkeit'},
+ {k:'wq',l:'Wasserqualität / Aufbereitung geprüft?',t:'pick',o:['Ja','Nein','Offen']},
+ {k:'arm',l:'Armaturen / Filter / Schlamm- und Magnetitabscheider'},
+ {k:'weiter',l:'Bestehende Komponenten weiterverwendbar?',t:'yn'},
+ {k:'weiterb',l:'Begründung'}
+]},
+{id:'w8',t:'8. Elektroinstallation und Zähleranlage',f:[
+ {k:'netz',l:'Hausanschluss / Netzform (soweit bekannt)'},
+ {k:'zsbau',l:'Zählerschrank, Bauart',t:'pick',o:['Aufputz','Unterputz','Unbekannt']},
+ {k:'zszust',l:'Zählerschrank, Zustand'},
+ {k:'zsfrei',l:'Freie Plätze / Reserve im Zählerschrank'},
+ {k:'zn',l:'Anzahl Zähler / Unterzähler',t:'n',w:1},{k:'zart',l:'Art der Zähler',w:1},
+ {k:'ewege',l:'Leitungsweg Zählerschrank zur Wärmepumpe'},
+ {k:'ekab',l:'Geschätzte Kabellänge',t:'n',u:'m'},
+ {k:'absich',l:'Absicherung / Leitungsquerschnitt (falls bekannt)'},
+ {k:'elekt',l:'Elektriker / Netzbetreiber einzubinden?',t:'pick',o:['Ja','Nein','Zu klären']},
+ {k:'wpz',l:'Separater Wärmepumpenzähler / §14a EnWG relevant?',t:'pick',o:['Vorgesehen','Vorhanden','Zu prüfen']},
+ {k:'steuer',l:'Steuer-/Kommunikationseinrichtung / Internet'},
+ {k:'pa',l:'Potentialausgleich / Erdung / Überspannungsschutz'},
+ {k:'efotos',l:'Fotos Zählerschrank und Hausanschluss?',t:'yn'}
+]},
+{id:'w9',t:'9. Demontage, Nebenarbeiten und Baustellenzugang',f:[
+ {k:'dem2',l:'Demontage Altgerät / Speicher / Leitungen'},
+ {k:'gewerke',l:'Zusätzliche Gewerke / Arbeiten',t:'multi',o:['Elektro','Sanitär','Kernbohrung','Erdarbeiten']},
+ {k:'abtr',l:'Abtransport / Entsorgung'},
+ {k:'bauseits',l:'Bauseitige Leistungen / Zuständigkeit'},
+ {k:'zufahrt',l:'Zufahrt / Stellfläche für Lieferfahrzeug',t:'pick',o:['LKW möglich','Eingeschränkt','Nicht möglich']},
+ {k:'transp',l:'Transportweg bis Aufstellort',t:'multi',o:['Ebenerdig','Treppen','Eng','Hebehilfe']},
+ {k:'lager',l:'Lagerfläche / Materialanlieferung'},
+ {k:'baust',l:'Besondere Baustellenbedingungen'}
+]},
+{id:'w11',t:'11. Offene Punkte und Zusatzkosten',f:[
+ {k:'op1',l:'Offener Punkt 1'},{k:'opz1',l:'Zuständig / bis wann zu klären'},
+ {k:'op2',l:'Offener Punkt 2'},{k:'opz2',l:'Zuständig / bis wann zu klären'},
+ {k:'op3',l:'Offener Punkt 3'},{k:'opz3',l:'Zuständig / bis wann zu klären'},
+ {k:'zusatz',l:'Voraussichtliche Zusatzarbeiten / Kostenhinweise',t:'area'},
+ {k:'freig',l:'Freigabe / Abstimmung'}
+]}
+],
+CHK:[
+['Außenansichten des Gebäudes und vorgesehener Wärmepumpenstandort'],
+['Aufstellfläche, Untergrund, Abstände zu Nachbargrundstück und Fenstern'],
+['Geplanter Leitungsweg zwischen Außengerät und Gebäude'],
+['Wanddurchführungen innen und außen sowie Wandaufbau'],
+['Bestehender Wärmeerzeuger mit Typenschild und Anschlüssen'],
+['Heizraum / Technikraum im Ganzen und mögliche Aufstellflächen'],
+['Heizungsverteiler, Pumpen, Mischer, Filter und Rohrleitungen'],
+['Warmwasserspeicher und Pufferspeicher mit Typenschildern'],
+['Fußbodenheizungsverteiler und/oder repräsentative Heizkörper'],
+['Zählerschrank vollständig, gerade und unbeschnitten'],
+['Stromzähler einzeln mit lesbarer Zählernummer'],
+['Hausanschlusskasten (HAK) und zu-/abgehende Leitungen'],
+['Potentialausgleich / Erdung, soweit zugänglich'],
+['Zufahrt, Transportweg, Treppen, Türen und Engstellen'],
+['Besondere Hindernisse, Nachbarbebauung und Schallsituation']
+],
+DOCS:['Angebot / Auftragsumfang geprüft','Heizlastberechnung / Wärmebedarfsnachweis (falls vorgesehen)','Datenblatt Wärmepumpe / Speicher','Fotos der Bestandsanlage und Aufstellorte','Fotos Zählerschrank / Zähler / HAK','Lageplan / Skizze Aufstellort und Leitungsweg','Angaben zum bisherigen Energieverbrauch','Angaben Heizflächen / Vorlauftemperatur','Netzbetreiber-/Elektrothemen geklärt oder terminiert','Bauseitige Leistungen und Entsorgung abgestimmt','Aufmaß-Protokoll vollständig ausgefüllt','Protokoll und offene Punkte an Projektleitung übergeben'],
+costs:null};
+
+/* ===== Protokoll 3: Klimaanlage ===== */
+function ig(n){var p='i'+n+'_';return{id:'k4_'+n,t:'4. Innengerät '+n+' (Raum)',opt:n>1,f:[
+ {k:p+'raum',l:'Raum / Etage'},
+ {k:p+'typ',l:'Gerätetyp / vorgesehener Standort'},
+ {k:p+'fl',l:'Raumfläche',t:'n',u:'m²',w:1},{k:p+'hoehe',l:'Raumhöhe',t:'n',u:'m',w:1},
+ {k:p+'modell',l:'Leistung / Modell (falls bekannt)'},
+ {k:p+'wand',l:'Montagewand / Wandmaterial'},
+ {k:p+'hind',l:'Abstände / Hindernisse / Zugänglichkeit'},
+ {k:p+'kond',l:'Kondensatablauf, Verlauf / Ziel'},
+ {k:p+'gef',l:'Gefälle möglich? / Kondensatpumpe nötig?',t:'pick',o:['Ja','Nein','Pumpe erforderlich','Offen']},
+ {k:p+'lweg',l:'Leitungsweg zum Außengerät'},
+ {k:p+'llen',l:'Geschätzte Leitungslänge',t:'n',u:'m',w:1},
+ {k:p+'strom',l:'Stromversorgung / Anschlussart'},
+ {k:p+'df',l:'Wanddurchführung / Kernbohrung',t:'multi',o:['Erforderlich','Vorhanden']},
+ {k:p+'dfd',l:'Durchmesser',t:'n',u:'mm',w:1}
+]}}
+var KL={id:'kl',name:'Klimaanlage',pdfTitle:'Aufmaß-Protokoll Klimaanlage',head:'AUFMASS-PROTOKOLL KLIMAANLAGE',file:'Aufmassprotokoll_Klimaanlage',key:'aufmass-kl-v1',
+legal:'Dieses Aufmaß dient der Bestandsaufnahme und Montagevorbereitung. Nicht einsehbare oder nicht dokumentierte Gegebenheiten sind als offene Punkte zu kennzeichnen. Technische Auslegung, Schall- und Aufstellbedingungen, elektrischer Anschluss und erforderliche Abstimmungen sind vor Umsetzung durch die jeweils zuständigen Fachstellen zu prüfen. Abweichungen, Zusatzarbeiten und mögliche Mehrkosten sind vor Ausführung mit Auftraggeber und Projektleitung abzustimmen.',
+S:[
+{id:'k1',t:'1. Kunden- und Objektangaben',f:[
+ {k:'kunde',l:'Kunde Vorname Nachname'},
+ {k:'str',l:'Straße, Hausnummer'},
+ {k:'plz',l:'PLZ',w:1},{k:'ort',l:'Wohnort',w:1},
+ {k:'tel',l:'Telefon / E-Mail'},
+ {k:'ansp',l:'Ansprechpartner vor Ort'},
+ {k:'astr',l:'Anlagenstandort, falls abweichend: Straße, Hausnummer'},
+ {k:'aplz',l:'PLZ',w:1},{k:'aort',l:'Ort',w:1},
+ {k:'durch',l:'Aufmaß durch',w:1},{k:'termin',l:'Datum / Uhrzeit',w:1}
+]},
+{id:'k2',t:'2. Gebäude und Nutzung',f:[
+ {k:'gebart',l:'Gebäudeart',t:'pick',o:['Einfamilienhaus','Mehrfamilienhaus','Gewerbe','Sonstiges']},
+ {k:'baujahr',l:'Baujahr',t:'n',w:1},
+ {k:'eigent',l:'Eigentum / Nutzung',t:'pick',o:['Eigentümer','Mieter','Gewerbe']},
+ {k:'raeume',l:'Zu klimatisierende Räume / Bereiche'},
+ {k:'anzr',l:'Anzahl Räume / Etagen'},
+ {k:'rgr',l:'Raumgrößen (L × B × H) / Flächen in m²',t:'area'},
+ {k:'nutzung',l:'Raumnutzung / Personen / Wärmequellen',t:'area'},
+ {k:'fenster',l:'Fensterflächen / Himmelsrichtung / Verschattung'},
+ {k:'daemm',l:'Dämmstandard / Dachgeschoss?',t:'pick',o:['Gut','Mittel','Gering','Unbekannt']},
+ {k:'anf',l:'Besondere Anforderungen',t:'multi',o:['Kühlen','Heizen','Entfeuchten','Serverraum']},
+ {k:'betrieb',l:'Betriebszeiten / gewünschte Solltemperatur'}
+]},
+{id:'k3',t:'3. Geplante Anlagenkonfiguration',f:[
+ {k:'atyp',l:'Anlagentyp',t:'pick',o:['Single-Split','Multi-Split','Monoblock','VRF/VRV']},
+ {k:'modell',l:'Hersteller / Modell (falls festgelegt)'},
+ {k:'naus',l:'Anzahl Außengeräte',t:'n',u:'Stück',w:1},{k:'ninn',l:'Anzahl Innengeräte',t:'n',u:'Stück',w:1},
+ {k:'lkuehl',l:'Leistung Kühlung',t:'n',u:'kW',w:1},{k:'lheiz',l:'Leistung Heizung',t:'n',u:'kW',w:1},
+ {k:'itypen',l:'Innengerätetypen',t:'multi',o:['Wand','Truhe','Kanal','Kassette','Sonstiges']},
+ {k:'regel',l:'Regelung / Bedienung',t:'multi',o:['Fernbedienung','App/WLAN','Zentralsteuerung']},
+ {k:'zonen',l:'Gleichzeitiger Betrieb / Zonenregelung'},
+ {k:'best',l:'Bestandsanlage vorhanden?',t:'yn'},
+ {k:'bestty',l:'Bestandsanlage: Hersteller / Typ'}
+]},
+ig(1),ig(2),ig(3),
+{id:'k4w',t:'4. Weitere Innengeräte',opt:true,f:[
+ {k:'weitere',l:'Weitere Innengeräte: Raum, Standort, Leistung, Leitungslänge und Kondensatführung',t:'area',h:'Mehr als drei Innengeräte hier dokumentieren.'}
+]},
+{id:'k5',t:'5. Außengerät, Aufstellort',f:[
+ {k:'ostand',l:'Vorgesehener Standort'},
+ {k:'oart',l:'Aufstellart',t:'pick',o:['Boden','Wandkonsole','Dach','Balkon']},
+ {k:'ofund',l:'Untergrund / Fundament / Konsole'},
+ {k:'otrag',l:'Abmessungen / Tragfähigkeit geprüft?',t:'yn'},
+ {k:'oabst',l:'Abstände zu Grundstücksgrenze / Nachbar / Fenstern'},
+ {k:'oschall',l:'Schall / Ausblasrichtung / Luftkurzschluss'},
+ {k:'ozug',l:'Zugänglichkeit für Montage und Wartung',t:'pick',o:['Gut','Eingeschränkt']},
+ {k:'ozugh',l:'Hinweise zur Zugänglichkeit'},
+ {k:'oschutz',l:'Schutz vor Schnee, Wasser, Laub, Dachlawinen'},
+ {k:'oschw',l:'Schwingungsentkopplung / Körperschall'},
+ {k:'osich',l:'Befestigung / Absturzsicherung erforderlich?',t:'yn'},
+ {k:'oalt',l:'Standortalternative / Einschränkungen'},
+ {k:'ofoto',l:'Fotos / Skizze erstellt?',t:'yn'}
+]},
+{id:'k6',t:'6. Kältemittel- und Verbindungsleitungen',f:[
+ {k:'kweg',l:'Leitungsweg Innen- zu Außengerät',t:'area'},
+ {k:'klen',l:'Gesamtlänge',t:'n',u:'m',w:1},{k:'khoe',l:'Höhenunterschied',t:'n',u:'m',w:1},
+ {k:'kdim',l:'Kältemittelleitungen, Dimension (falls bekannt)'},
+ {k:'kkanal',l:'Leitungskanal / Dämmung / UV-Schutz'},
+ {k:'kdf',l:'Anzahl Wand-/Deckendurchführungen',t:'n',u:'Stück'},
+ {k:'kdft',l:'Art der Durchführung',t:'multi',o:['Kernbohrung','Vorhanden']},
+ {k:'kbrand',l:'Brandschutz / Abdichtung / Wetterschutz'},
+ {k:'ksicht',l:'Leitungsführung sichtbar oder verdeckt?',t:'multi',o:['Sichtbar','Kanal','Wand/Decke','Schacht']},
+ {k:'kschacht',l:'Schächte / abgehängte Decke nutzbar?',t:'yn'},
+ {k:'kschh',l:'Hinweise zu Schächten und Decken'},
+ {k:'kmittel',l:'Kältemittel / Füllmenge (laut Gerätedaten)'},
+ {k:'kfuell',l:'Zusätzliche Füllmenge / Herstellergrenzen prüfen',t:'pick',o:['Geprüft','Offen']}
+]},
+{id:'k7',t:'7. Kondensat und Entwässerung',f:[
+ {k:'cziel',l:'Kondensat Innengeräte, Ablaufziel'},
+ {k:'cgef',l:'Gefälle / Leitungsweg'},
+ {k:'cpumpe',l:'Kondensatpumpe erforderlich?',t:'pick',o:['Ja','Nein','Je Gerät prüfen']},
+ {k:'cpstrom',l:'Stromversorgung / Zugänglichkeit Pumpe'},
+ {k:'caussen',l:'Kondensat Außengerät (Heizbetrieb / Abtauung)'},
+ {k:'cfrost',l:'Frostsichere Ableitung / Versickerung'},
+ {k:'cablauf',l:'Ablaufanschluss vorhanden?',t:'yn'},
+ {k:'clage',l:'Lage des Ablaufanschlusses'},
+ {k:'cvereis',l:'Risiko von Vereisung / Wasseransammlung'}
+]},
+{id:'k8',t:'8. Elektroinstallation',f:[
+ {k:'espann',l:'Versorgung / Spannung laut Gerätedaten'},
+ {k:'eanschl',l:'Anschluss je Gerät / Außengerät'},
+ {k:'ezul',l:'Zuleitung / Absicherung / Leitungsquerschnitt'},
+ {k:'ekab',l:'Geschätzte Kabellänge',t:'n',u:'m',w:1},{k:'eweg',l:'Leitungsweg',w:1},
+ {k:'esteck',l:'Anschluss über Steckdose oder Festanschluss?',t:'pick',o:['Steckdose','Festanschluss']},
+ {k:'etrenn',l:'Trenn-/Wartungsschalter erforderlich?',t:'pick',o:['Ja','Nein','Laut Hersteller prüfen']},
+ {k:'ezs',l:'Zählerschrank / Unterverteilung, Zustand'},
+ {k:'efrei',l:'Freie Sicherungsplätze / Reserve'},
+ {k:'epa',l:'Potentialausgleich / Erdung / Überspannungsschutz'},
+ {k:'eelekt',l:'Elektriker / Netzbetreiber einzubinden?',t:'pick',o:['Ja','Nein','Zu klären']},
+ {k:'esteuer',l:'Steuerung / WLAN / Netzwerkempfang am Standort'},
+ {k:'ekabel',l:'Kabelgebundene Steuerung / Kondensatpumpe'}
+]},
+{id:'k9',t:'9. Montagebedingungen und Nebenarbeiten',f:[
+ {k:'mzu',l:'Zufahrt / Stellfläche für Lieferfahrzeug',t:'pick',o:['LKW möglich','Eingeschränkt','Nicht möglich']},
+ {k:'mtransp',l:'Transportweg / Zugang zu Montageorten',t:'multi',o:['Ebenerdig','Treppen','Leiter','Hebehilfe']},
+ {k:'mgeruest',l:'Gerüst / Hubsteiger / Absturzsicherung'},
+ {k:'mhi',l:'Montagehöhe Innengerät',t:'n',u:'m',w:1},{k:'mha',l:'Montagehöhe Außengerät',t:'n',u:'m',w:1},
+ {k:'mwand',l:'Wandaufbau / Dämmung / Fassadenmaterial'},
+ {k:'mkern',l:'Kernbohrungen / Durchbrüche / Abdichtung'},
+ {k:'mneben',l:'Maler-/Trockenbau-/Elektroarbeiten erforderlich?'},
+ {k:'mbau',l:'Bauseitige Leistungen / Zuständigkeit'},
+ {k:'mdemo',l:'Demontage Altgeräte / Entsorgung'},
+ {k:'mlager',l:'Lagerplatz / Materialanlieferung'}
+]},
+{id:'k11',t:'11. Offene Punkte und Zusatzkosten',f:[
+ {k:'op1',l:'Offener Punkt 1'},{k:'opz1',l:'Zuständig / bis wann zu klären'},
+ {k:'op2',l:'Offener Punkt 2'},{k:'opz2',l:'Zuständig / bis wann zu klären'},
+ {k:'op3',l:'Offener Punkt 3'},{k:'opz3',l:'Zuständig / bis wann zu klären'},
+ {k:'zusatz',l:'Voraussichtliche Zusatzarbeiten / Kostenhinweise',t:'area'},
+ {k:'freig',l:'Freigabe / Abstimmung'}
+]}
+],
+CHK:[
+['Außenansichten und vorgesehener Standort des Außengeräts'],
+['Abstände zu Nachbargrundstücken, Fenstern und Aufenthaltsbereichen'],
+['Untergrund, Fundament, Wandkonsole und Befestigungspunkte'],
+['Jeder zu klimatisierende Raum aus mehreren Blickwinkeln'],
+['Vorgesehene Position jedes Innengeräts mit Umfeld'],
+['Leitungswege zwischen Innen- und Außengeräten'],
+['Wand-/Deckendurchführungen innen und außen'],
+['Kondensatablauf, Ablaufziel und mögliche Pumpenstandorte'],
+['Elektroanschluss, Unterverteilung und Zählerschrank'],
+['Typenschilder und Anschlüsse vorhandener Klimageräte'],
+['Zufahrt, Transportweg, Gerüst-/Hubsteigerbedarf'],
+['Besondere Hindernisse, Schallquellen und Nachbarsituation']
+],
+DOCS:['Angebot / Auftragsumfang geprüft','Gerätedatenblätter / Leistungsdaten','Raumliste mit Flächen und Nutzung','Skizze mit Innen- und Außengeräten','Leitungslängen / Höhenunterschiede dokumentiert','Kondensatführung dokumentiert','Elektroanschluss / Absicherung geklärt','Aufstellort und Schallsituation geprüft','Fotodokumentation vollständig','Bauseitige Leistungen abgestimmt','Altgeräte / Entsorgung geklärt','Aufmaß-Protokoll vollständig ausgefüllt','Offene Punkte an Projektleitung übergeben','Montagezugang und Terminbedingungen abgestimmt'],
+costs:null};
+
+var PROTO={pv:PV,wp:WP,kl:KL};
+var P,S,CHK,DOCS,st,secEls={};
+function today(){return new Date().toISOString().slice(0,10)}
+function save(){try{localStorage.setItem(P.key,JSON.stringify(st))}catch(e){}}
+function el(t,a,c){var e=document.createElement(t);for(var k in (a||{})){if(k==='class')e.className=a[k];else if(k==='text')e.textContent=a[k];else e.setAttribute(k,a[k])}(c||[]).forEach(function(x){e.appendChild(x)});return e}
+function val(k){return st.v[k]===undefined?'':st.v[k]}
+function costs(){return P.costs?P.costs():[]}
+function warnOn(f){var v=val(f.k),o=f.warn.on;if(o==='pos')return +v>0;if(o==='ge8')return +v>=8;return v===o}
+function filled(f){var v=val(f.k);return Array.isArray(v)?v.length>0:String(v).trim()!==''}
+function dispv(f){var v=val(f.k);if(Array.isArray(v))return v.join(', ');v=String(v).trim();if(v==='ja')v='Ja';else if(v==='nein')v='Nein';if(v&&f.u&&f.t==='n')v+=' '+f.u;return v}
+function eur(n){return n.toLocaleString('de-DE')+' €'}
+
+function load(id){
+ P=PROTO[id];S=P.S;CHK=P.CHK;DOCS=P.DOCS;
+ st={v:{},c:{},sig:'',signer:'',date:today()};
+ try{var raw=localStorage.getItem(P.key);if(raw){var p=JSON.parse(raw);if(p&&p.v)st=p}}catch(e){}
+ try{localStorage.setItem(TYPE_KEY,id)}catch(e){}
+ Array.prototype.forEach.call(document.querySelectorAll('#tabs button'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-t')===id?'true':'false')});
+ render();
+}
+
+var app=document.getElementById('app');
+function render(){
+ app.innerHTML='';secEls={};
+ S.forEach(function(s,i){
+  var d=el('details',{id:'sec-'+s.id});if(i===0)d.open=true;
+  var cnt=el('span',{class:'cnt'});
+  d.appendChild(el('summary',{},[el('span',{text:s.t}),cnt]));
+  var b=el('div',{class:'body'});
+  s.f.forEach(function(f){b.appendChild(field(f))});
+  d.appendChild(b);app.appendChild(d);secEls[s.id]={cnt:cnt,d:d};
+ });
+ app.appendChild(checkSection());
+ app.appendChild(finalSection());
+ refresh();window.scrollTo(0,0);
+}
+function field(f){
+ var w=el('div',{class:'field'+(f.w?' half':'')}),id='f-'+f.k,t=f.t||'text';
+ var grp=(t==='yn'||t==='pick'||t==='multi');
+ w.appendChild(el(grp?'div':'label',grp?{class:'lbl',text:f.l}:{for:id,text:f.l}));
+ var inp;
+ if(t==='yn'){
+  inp=el('div',{class:'seg',role:'group','aria-label':f.l});
+  ['ja','nein'].forEach(function(o){
+   var b=el('button',{type:'button',text:o==='ja'?'Ja':'Nein','aria-pressed':val(f.k)===o?'true':'false'});
+   b.onclick=function(){st.v[f.k]=val(f.k)===o?'':o;save();Array.prototype.forEach.call(inp.children,function(x,j){x.setAttribute('aria-pressed',st.v[f.k]===['ja','nein'][j]?'true':'false')});refresh()};
+   inp.appendChild(b)});
+ }else if(t==='pick'||t==='multi'){
+  inp=el('div',{class:'chips',role:'group','aria-label':f.l});
+  var isOn=function(o){return t==='multi'?(val(f.k)||[]).indexOf(o)>-1:val(f.k)===o};
+  var sync=function(){Array.prototype.forEach.call(inp.children,function(x){x.setAttribute('aria-pressed',isOn(x.textContent)?'true':'false')})};
+  f.o.forEach(function(o){
+   var b=el('button',{type:'button',class:'chip',text:o,'aria-pressed':isOn(o)?'true':'false'});
+   b.onclick=function(){
+    if(t==='multi'){var a=(val(f.k)||[]).slice(),i=a.indexOf(o);if(i>-1)a.splice(i,1);else a.push(o);st.v[f.k]=a}
+    else st.v[f.k]=val(f.k)===o?'':o;
+    save();sync();refresh()};
+   inp.appendChild(b)});
+ }else if(t==='area'){inp=el('textarea',{id:id});inp.value=val(f.k);inp.oninput=function(){st.v[f.k]=inp.value;save();refresh()}}
+ else if(t==='sel'){inp=el('select',{id:id});[''].concat(f.o).forEach(function(o){inp.appendChild(el('option',{value:o,text:o||'Bitte wählen'}))});inp.value=val(f.k);inp.onchange=function(){st.v[f.k]=inp.value;save();refresh()}}
+ else{
+  inp=el('input',{id:id,type:t==='n'?'number':'text'});
+  if(t==='n'){inp.setAttribute('inputmode','decimal');inp.setAttribute('step','any')}
+  inp.value=val(f.k);inp.oninput=function(){st.v[f.k]=inp.value;save();refresh()};
+ }
+ if(f.u){var u=el('div',{class:'unit'},[inp,el('span',{text:f.u})]);w.appendChild(u)}else w.appendChild(inp);
+ if(f.h)w.appendChild(el('div',{class:'hint',text:f.h}));
+ if(f.warn){var wn=el('div',{class:'warn',text:f.warn.text,'data-w':f.k});wn.hidden=!warnOn(f);w.appendChild(wn)}
+ return w;
+}
+function checkSection(){
+ var d=el('details',{id:'sec-chk'}),cnt=el('span',{class:'cnt'});
+ d.appendChild(el('summary',{},[el('span',{text:'Fotos und Unterlagen'}),cnt]));
+ var b=el('div',{class:'body'});
+ b.appendChild(el('div',{class:'legal',text:'Alle Fotos sauber, gerade und unverwackelt. Bei wichtigen Aufnahmen zusätzlich ein Weitwinkelfoto der Umgebung. Fotos werden nur als Vorschau in dieser Sitzung angezeigt, bitte zusätzlich über die Kamera-App sichern und beim Projektmanagement einreichen.'}));
+ CHK.forEach(function(c,i){
+  var id='p'+i,row=el('div',{class:'chk'}),cb=el('input',{type:'checkbox',id:id});cb.checked=!!st.c[id];
+  cb.onchange=function(){st.c[id]=cb.checked;save();refresh()};
+  row.appendChild(el('div',{class:'chkrow'},[cb,el('label',{for:id,text:c[0]})]));
+  var ph=el('div',{class:'photo'}),fi=el('input',{type:'file',accept:'image/*',capture:'environment',multiple:'multiple',id:'file'+i,hidden:'hidden'});
+  var bt=el('button',{type:'button',class:'btn',text:'Foto aufnehmen'});bt.onclick=function(){fi.click()};
+  fi.onchange=function(){Array.prototype.forEach.call(fi.files,function(f){var im=el('img',{alt:'Foto'});im.src=URL.createObjectURL(f);ph.appendChild(im)});if(fi.files.length){cb.checked=true;st.c[id]=true;save();refresh()}};
+  ph.appendChild(bt);ph.appendChild(fi);row.appendChild(ph);b.appendChild(row);
+ });
+ b.appendChild(el('div',{class:'lbl',text:'Unterlagen zur vollständigen Einreichung'}));
+ DOCS.forEach(function(c,i){
+  var id='d'+i,row=el('div',{class:'chk'}),cb=el('input',{type:'checkbox',id:id});cb.checked=!!st.c[id];
+  cb.onchange=function(){st.c[id]=cb.checked;save();refresh()};
+  row.appendChild(el('div',{class:'chkrow'},[cb,el('label',{for:id,text:c})]));b.appendChild(row);
+ });
+ d.appendChild(b);secEls.chk={cnt:cnt,d:d};return d;
+}
+function finalSection(){
+ var d=el('details',{id:'sec-end',open:'open'});
+ d.appendChild(el('summary',{},[el('span',{text:'Abschluss'})]));
+ var b=el('div',{class:'body'});
+ if(P.costs)b.appendChild(el('div',{class:'costs',id:'costbox'}));
+ var sn=el('div',{class:'field half'},[el('label',{for:'signer',text:'Name Auftraggeber'})]),si=el('input',{id:'signer',type:'text'});
+ si.value=st.signer||'';si.oninput=function(){st.signer=si.value;save()};sn.appendChild(si);
+ var dt=el('div',{class:'field half'},[el('label',{for:'sdate',text:'Ort / Datum'})]),di=el('input',{id:'sdate',type:'text'});
+ di.value=st.date;di.oninput=function(){st.date=di.value;save()};dt.appendChild(di);
+ b.appendChild(sn);b.appendChild(dt);
+ var sg=el('div',{class:'field'},[el('div',{class:'lbl',text:'Unterschrift Auftraggeber'})]),cv=el('canvas',{id:'sig'});sg.appendChild(cv);
+ var clr=el('button',{type:'button',class:'btn',text:'Unterschrift löschen'});sg.appendChild(clr);b.appendChild(sg);
+ b.appendChild(el('div',{class:'legal',text:P.legal}));
+ var ta=el('textarea',{id:'summary',readonly:'readonly',style:'grid-column:span 2;min-height:140px;font-size:13px'});b.appendChild(ta);
+ var act=el('div',{class:'actions'}),cp=el('button',{type:'button',class:'btn',text:'Zusammenfassung kopieren'}),rs=el('button',{type:'button',class:'btn danger',text:'Dieses Protokoll zurücksetzen'});
+ cp.onclick=function(){var t=summary();ta.value=t;ta.select();
+  try{navigator.clipboard.writeText(t).then(function(){toast('Kopiert')},function(){toast('Text markiert, bitte manuell kopieren')})}catch(e){toast('Text markiert, bitte manuell kopieren')}};
+ var armed=false;rs.onclick=function(){if(!armed){armed=true;rs.textContent='Wirklich zurücksetzen?';setTimeout(function(){armed=false;rs.textContent='Dieses Protokoll zurücksetzen'},4000);return}
+  try{localStorage.removeItem(P.key)}catch(e){}load(P.id);toast('Zurückgesetzt')};
+ var pb=el('button',{type:'button',class:'btn primary',id:'pdfbtn',text:'PDF erstellen und speichern',style:'flex-basis:100%'});pb.onclick=makePdf;
+ act.appendChild(pb);act.appendChild(cp);act.appendChild(rs);b.appendChild(act);d.appendChild(b);
+ setTimeout(function(){initSig(cv,clr)},0);return d;
+}
+function initSig(cv,clr){
+ var r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;
+ var x=cv.getContext('2d');x.scale(dpr,dpr);x.lineWidth=2.2;x.lineCap='round';x.lineJoin='round';
+ x.strokeStyle=getComputedStyle(document.body).color;
+ if(st.sig){var im=new Image();im.onload=function(){x.drawImage(im,0,0,r.width,r.height)};im.src=st.sig}
+ var dn=false,lx=0,ly=0;
+ function pos(e){var q=cv.getBoundingClientRect();return[e.clientX-q.left,e.clientY-q.top]}
+ cv.addEventListener('pointerdown',function(e){dn=true;var p=pos(e);lx=p[0];ly=p[1];cv.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(lx,ly);x.lineTo(lx+.1,ly+.1);x.stroke();e.preventDefault()});
+ cv.addEventListener('pointermove',function(e){if(!dn)return;var p=pos(e);x.beginPath();x.moveTo(lx,ly);x.lineTo(p[0],p[1]);x.stroke();lx=p[0];ly=p[1]});
+ function up(){if(!dn)return;dn=false;try{st.sig=cv.toDataURL('image/png')}catch(e){}save();refresh()}
+ cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+ clr.onclick=function(){x.clearRect(0,0,r.width,r.height);st.sig='';save();refresh()};
+}
+function sigForPdf(){return new Promise(function(res){
+ if(!st.sig)return res(null);
+ var im=new Image();
+ im.onload=function(){var c=document.createElement('canvas');c.width=im.width;c.height=im.height;var x=c.getContext('2d');x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#14202B';x.fillRect(0,0,c.width,c.height);res({url:c.toDataURL('image/png'),w:c.width,h:c.height})};
+ im.onerror=function(){res(null)};im.src=st.sig})}
+
+/* Speichern: Android-App, Artifact-Download oder Browser */
+function blobSaver(){return{save:function(o){var u=URL.createObjectURL(new Blob([o.data],{type:'application/pdf'})),a=document.createElement('a');a.href=u;a.download=o.filename;document.body.appendChild(a);a.click();a.remove();return Promise.resolve({status:'saved'})}}}
+function getSaver(){
+ if(window.AndroidBridge){
+  var b64=function(buf){var u=new Uint8Array(buf),s='',i,n=0x8000;for(i=0;i<u.length;i+=n)s+=String.fromCharCode.apply(null,u.subarray(i,i+n));return btoa(s)};
+  return Promise.resolve({save:function(o){return new Promise(function(res,rej){var ok=false;try{ok=window.AndroidBridge.savePdf(b64(o.data),o.filename)}catch(e){}ok?res({status:'saved'}):rej({code:'unavailable'})})}});
+ }
+ if(window.claude&&window.claude.use)return window.claude.use('downloads').then(function(d){return d||blobSaver()},function(){return blobSaver()});
+ return Promise.resolve(blobSaver());
+}
+function makePdf(){
+ var J=window.jspdf&&window.jspdf.jsPDF;
+ if(!J){toast('PDF-Bibliothek nicht geladen, Internet prüfen');return}
+ Promise.all([getSaver(),sigForPdf()]).then(function(r){
+  var dl=r[0],sg=r[1];
+  var d=new J({unit:'mm',format:'a4'}),M=15,CW=180,LW=58,y=34,MUT=[91,107,121],INK=[20,32,43];
+  function T(s){return String(s).replace(/€/g,'EUR').replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g,'')}
+  function col(c){d.setTextColor(c[0],c[1],c[2])}
+  function ensure(h){if(y+h>282){d.addPage();y=16}}
+  function sec(t){ensure(18);y+=2;d.setFillColor(27,58,87);d.rect(M,y,CW,7,'F');d.setFont('helvetica','bold');d.setFontSize(10);col([255,255,255]);d.text(T(t),M+2.5,y+4.9);y+=10}
+  function row(l,v,empty){
+   d.setFont('helvetica','normal');d.setFontSize(8.5);var a=d.splitTextToSize(T(l),LW-3);
+   d.setFontSize(9.5);var b=d.splitTextToSize(T(v),CW-LW-2);
+   var h=Math.max(a.length*3.8,b.length*4.3)+2.4;ensure(h);
+   d.setFontSize(8.5);col(MUT);d.text(a,M,y+3.6);
+   d.setFontSize(9.5);col(empty?[150,160,170]:INK);d.text(b,M+LW,y+3.6);
+   y+=h;d.setDrawColor(213,220,228);d.setLineWidth(.2);d.line(M,y-1,M+CW,y-1)}
+  function note(t){d.setFont('helvetica','normal');d.setFontSize(8);var b=d.splitTextToSize(T(t),CW-LW-2);var h=b.length*3.6+1.5;ensure(h);col([179,38,30]);d.text(b,M+LW,y+2.6);y+=h}
+  function chk(t,on){d.setFont('helvetica','normal');d.setFontSize(9);var b=d.splitTextToSize(T(t),CW-9);var h=b.length*4.2+2;ensure(h);
+   d.setDrawColor(20,32,43);d.setLineWidth(.3);d.rect(M,y+.6,3.6,3.6);
+   if(on){d.setLineWidth(.6);d.line(M+.7,y+2.5,M+1.6,y+3.5);d.line(M+1.6,y+3.5,M+3,y+1.2)}
+   col(INK);d.text(b,M+6,y+3.6);y+=h}
+  d.setFillColor(27,58,87);d.rect(0,0,210,24,'F');d.setFillColor(242,177,0);d.rect(0,24,210,1.5,'F');
+  d.setFont('helvetica','bold');d.setFontSize(18);col([255,255,255]);d.text(T(P.pdfTitle),M,13);
+  d.setFont('helvetica','normal');d.setFontSize(9);d.text('SonnenInvest GmbH',M,19);
+  d.text(new Date().toLocaleDateString('de-DE'),M+CW,13,{align:'right'});
+  S.forEach(function(s){
+   sec(s.t);
+   s.f.forEach(function(f){
+    var v=dispv(f),e=!v;
+    row(f.l.replace(/:.*$/,''),e?'-':v,e);
+    if(f.warn&&warnOn(f))note(f.warn.text)});
+  });
+  if(P.costs){
+   var c=costs(),tot=0;sec('Mögliche Mehrkosten');
+   if(!c.length)row('Mehrkosten','Keine durch Angaben ausgelöst',1);
+   c.forEach(function(x){tot+=x[1];row(x[0],eur(x[1]))});
+   if(+val('trauf')>=8)row('Externer Gerüstbauer (Traufhöhe ab 8 m)','Preis offen');
+   if(c.length)row('Summe (maximal)',eur(tot));
+  }
+  sec('Fotos und Unterlagen');
+  CHK.forEach(function(x,i){chk(x[0],st.c['p'+i])});
+  y+=2;ensure(8);d.setFont('helvetica','bold');d.setFontSize(9);col(INK);d.text('Unterlagen zur vollständigen Einreichung',M,y+3);y+=6;
+  DOCS.forEach(function(x,i){chk(x,st.c['d'+i])});
+  sec('Unterschrift Auftraggeber');ensure(46);
+  if(sg){var h=28,w=h*sg.w/sg.h;if(w>90){w=90;h=w*sg.h/sg.w}d.addImage(sg.url,'PNG',M,y,w,h)}
+  y+=30;d.setDrawColor(20,32,43);d.setLineWidth(.3);d.line(M,y,M+90,y);
+  d.setFont('helvetica','normal');d.setFontSize(8.5);col(MUT);d.text(T((st.signer||'')+(st.signer&&st.date?', ':'')+(st.date||'')),M,y+4);y+=9;
+  d.setFontSize(7.5);var lg=d.splitTextToSize(T(P.legal),CW);
+  ensure(lg.length*3.2+2);d.text(lg,M,y+3);
+  var n=d.getNumberOfPages();
+  for(var i=1;i<=n;i++){d.setPage(i);d.setFont('helvetica','normal');d.setFontSize(8);col(MUT);d.text(T(P.pdfTitle+' '+(st.v.kunde||'')),M,291);d.text('Seite '+i+' / '+n,M+CW,291,{align:'right'})}
+  var fn=P.file+'_'+String(st.v.kunde||'Kunde').replace(/[^A-Za-z0-9]+/g,'_')+'.pdf';
+  return dl.save({filename:fn,data:d.output('arraybuffer')}).then(function(){toast('PDF gespeichert')},function(er){toast(er&&er.code==='declined'?'Speichern abgebrochen':'Speichern nicht möglich')});
+ }).catch(function(){toast('PDF konnte nicht erstellt werden')});
+}
+function summary(){
+ var o=[P.head,''];
+ S.forEach(function(s){var l=[];s.f.forEach(function(f){if(filled(f))l.push(f.l.replace(/:.*$/,'')+': '+dispv(f))});if(l.length){o.push('== '+s.t.toUpperCase());o=o.concat(l);o.push('')}});
+ var c=costs();if(c.length){o.push('== MÖGLICHE MEHRKOSTEN');var t=0;c.forEach(function(x){o.push(x[0]+': '+eur(x[1]));t+=x[1]});o.push('Summe (maximal): '+eur(t));o.push('')}
+ var open=[];CHK.forEach(function(c,i){if(!st.c['p'+i])open.push(c[0])});DOCS.forEach(function(c,i){if(!st.c['d'+i])open.push(c)});
+ o.push('== OFFEN ('+open.length+')');o=o.concat(open.map(function(x){return '- '+x}));
+ o.push('');o.push('Unterschrift: '+(st.sig?'vorhanden':'fehlt')+(st.signer?', '+st.signer:'')+', '+st.date);
+ return o.join('\n');
+}
+function refresh(){
+ var tot=0,done=0;
+ S.forEach(function(s){var n=0;s.f.forEach(function(f){if(!s.opt)tot++;if(filled(f)){if(!s.opt)done++;n++}});secEls[s.id].cnt.textContent=n+' von '+s.f.length;
+  s.f.forEach(function(f){if(f.warn){var w=document.querySelector('[data-w="'+f.k+'"]');if(w)w.hidden=!warnOn(f)}})});
+ var ct=CHK.length+DOCS.length,cd=0;CHK.forEach(function(c,i){if(st.c['p'+i])cd++});DOCS.forEach(function(c,i){if(st.c['d'+i])cd++});
+ secEls.chk.cnt.textContent=cd+' von '+ct;tot+=ct;done+=cd;
+ var p=Math.round(done/tot*100);document.getElementById('pct').textContent=p+' %';document.getElementById('barfill').style.width=p+'%';
+ var k=st.v.kunde;document.getElementById('sub').textContent='SonnenInvest GmbH'+(k?' · '+k:'');
+ var box=document.getElementById('costbox');if(box){box.innerHTML='';box.appendChild(el('div',{class:'lbl',text:'Mögliche Mehrkosten laut Ihren Angaben'}));
+  var c=costs(),t=0;if(!c.length)box.appendChild(el('div',{class:'hint',text:'Bisher keine Mehrkosten durch Angaben ausgelöst.'}));
+  c.forEach(function(x){t+=x[1];box.appendChild(el('div',{class:'cost'},[el('span',{text:x[0]}),el('b',{text:eur(x[1])})]))});
+  if(+val('trauf')>=8)box.appendChild(el('div',{class:'cost'},[el('span',{text:'Externer Gerüstbauer (Traufhöhe ab 8 m)'}),el('b',{text:'Preis offen'})]));
+  box.appendChild(el('div',{class:'total'},[el('span',{text:'Summe'}),el('span',{text:eur(t)})]))}
+ var ta=document.getElementById('summary');if(ta&&document.activeElement!==ta)ta.value=summary();
+}
+var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},2200)}
+
+Array.prototype.forEach.call(document.querySelectorAll('#tabs button'),function(b){b.onclick=function(){load(b.getAttribute('data-t'))}});
+var start='pv';try{var sv=localStorage.getItem(TYPE_KEY);if(sv&&PROTO[sv])start=sv}catch(e){}
+load(start);
+})();
+</script>
+
+<script>if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){})}</script>
+</html>
